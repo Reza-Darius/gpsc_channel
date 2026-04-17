@@ -55,17 +55,17 @@ pub fn channel_benchmark(c: &mut Criterion) {
     group.sample_size(10);
     group.measurement_time(Duration::from_secs(20));
 
-    group.bench_function("tokio mpsc", |b| {
+    group.bench_function("tokio mpsc recv", |b| {
         b.to_async(&rt)
             .iter(|| mspc(n_msgs, n_worker, buffer, delay))
     });
 
-    group.bench_function("tokio mpsc limit", |b| {
+    group.bench_function("tokio mpsc recv_many", |b| {
         b.to_async(&rt)
             .iter(|| mspc_limit(n_msgs, n_worker, buffer, delay))
     });
 
-    group.bench_function("batch", |b| {
+    group.bench_function("gpsc", |b| {
         b.to_async(&rt)
             .iter(|| batch(n_msgs, n_worker, buffer, delay))
     });
@@ -86,12 +86,12 @@ pub fn channel_benchmark(c: &mut Criterion) {
     group.sample_size(10);
     group.measurement_time(Duration::from_secs(20));
 
-    group.bench_function("tokio mpsc", |b| {
+    group.bench_function("tokio mpsc recv", |b| {
         b.to_async(&rt)
             .iter(|| mspc(n_msgs, n_worker, buffer, delay))
     });
 
-    group.bench_function("tokio mpsc limit", |b| {
+    group.bench_function("tokio mpsc recv_many", |b| {
         b.to_async(&rt)
             .iter(|| mspc_limit(n_msgs, n_worker, buffer, delay))
     });

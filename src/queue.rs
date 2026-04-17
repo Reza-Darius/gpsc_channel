@@ -1,28 +1,28 @@
-use std::sync::atomic::{AtomicBool, AtomicU32};
+use std::sync::atomic::AtomicBool;
 
 use parking_lot::Mutex;
 use tokio::sync::{Notify, Semaphore};
 
-use super::container::BatchChanContainer;
+use super::container::GpscContainer;
 
 #[derive(Debug)]
-pub(crate) struct BatchQueue<C> {
+pub(crate) struct GpscQueue<C> {
     q: Mutex<C>,
     cap: usize,
     closed: AtomicBool,
-    n_sender: AtomicU32,
+    n_sender: Mutex<u32>,
 
     slots: Semaphore,
     not_empty: Notify,
     not_full: Notify,
 }
 
-impl<C> BatchQueue<C>
+impl<C> GpscQueue<C>
 where
-    C: BatchChanContainer + Send + 'static,
+    C: GpscContainer + Send + 'static,
 {
     pub(crate) fn new(cap: usize) -> Self {
-        BatchQueue {
+        GpscQueue {
             q: Mutex::new(C::new(cap)),
             cap,
             closed: false.into(),
@@ -70,7 +70,7 @@ where
         let n = guard.len();
         std::mem::swap(&mut *guard, buf);
 
-        assert_eq!(n, self.cap);
+        debug_assert_eq!(n, self.cap);
 
         self.slots.add_permits(n);
         n
@@ -81,19 +81,18 @@ where
     }
 
     pub(crate) fn close(&self) {
-        self.closed
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.closed.store(true, std::sync::atomic::Ordering::SeqCst);
     }
 
     pub(crate) fn is_closed(&self) -> bool {
-        self.closed.load(std::sync::atomic::Ordering::Relaxed)
+        self.closed.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     pub(crate) fn decr_sender(&self) {
-        self.n_sender
-            .fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+        let mut guard = self.n_sender.lock();
+        *guard -= 1;
 
-        if self.n_sender.load(std::sync::atomic::Ordering::Relaxed) == 0 {
+        if *guard == 0 {
             self.close();
         }
     }
@@ -109,11 +108,11 @@ mod tests {
 
         let mut task_handles = vec![];
 
-        for i in 0..100 {
+        for _ in 0..100 {
             let tx_clone = tx.clone();
             task_handles.push(tokio::spawn(async move {
                 let data = String::from("hello");
-                tx_clone.send(data).await;
+                let _ = tx_clone.send(data).await;
             }));
         }
 
@@ -139,7 +138,7 @@ mod tests {
 
             task_handles.push(tokio::spawn(async move {
                 let data = String::from("hello");
-                tx_clone.send(data).await;
+                let _ = tx_clone.send(data).await;
             }));
         }
 
@@ -165,7 +164,7 @@ mod tests {
 
             task_handles.push(tokio::spawn(async move {
                 let data = String::from("hello");
-                tx_clone.send(data).await;
+                let _ = tx_clone.send(data).await;
             }));
         }
 

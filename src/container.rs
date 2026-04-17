@@ -1,11 +1,16 @@
-use std::collections::VecDeque;
+use std::{
+    collections::{BTreeMap, HashMap, VecDeque},
+    hash::Hash,
+};
 
-pub trait BatchChanContainer
+/// you can implement this trait for your own collections
+pub trait GpscContainer
 where
     Self: Sized,
 {
     type Message;
 
+    /// if your collection isnt dynamically resizable, then the passed container to [take] on the receiver must match the cap
     fn new(cap: usize) -> Self;
 
     fn len(&self) -> usize;
@@ -15,7 +20,7 @@ where
     fn insert(&mut self, msg: Self::Message);
 }
 
-impl<T> BatchChanContainer for Vec<T> {
+impl<T> GpscContainer for Vec<T> {
     type Message = T;
 
     fn new(cap: usize) -> Self {
@@ -35,7 +40,7 @@ impl<T> BatchChanContainer for Vec<T> {
     }
 }
 
-impl<T> BatchChanContainer for VecDeque<T> {
+impl<T> GpscContainer for VecDeque<T> {
     type Message = T;
 
     fn new(cap: usize) -> Self {
@@ -52,5 +57,51 @@ impl<T> BatchChanContainer for VecDeque<T> {
 
     fn insert(&mut self, msg: Self::Message) {
         self.push_back(msg);
+    }
+}
+
+impl<K, V> GpscContainer for HashMap<K, V>
+where
+    K: Eq + Hash,
+{
+    type Message = (K, V);
+
+    fn new(_: usize) -> Self {
+        Self::new()
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn clear(&mut self) {
+        self.clear();
+    }
+
+    fn insert(&mut self, msg: Self::Message) {
+        HashMap::insert(self, msg.0, msg.1);
+    }
+}
+
+impl<K, V> GpscContainer for BTreeMap<K, V>
+where
+    K: Eq + Hash + Ord,
+{
+    type Message = (K, V);
+
+    fn new(_: usize) -> Self {
+        Self::new()
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn clear(&mut self) {
+        self.clear();
+    }
+
+    fn insert(&mut self, msg: Self::Message) {
+        BTreeMap::insert(self, msg.0, msg.1);
     }
 }

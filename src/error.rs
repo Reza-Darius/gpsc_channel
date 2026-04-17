@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum BatchChanError {
+pub enum GpscError {
     #[error("{0}")]
     Take(String),
     #[error("channel is closed")]

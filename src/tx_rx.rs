@@ -1,37 +1,37 @@
 use std::sync::Arc;
 
-use crate::{container::BatchChanContainer, error::BatchChanError, queue::BatchQueue};
+use crate::{container::GpscContainer, error::GpscError, queue::GpscQueue};
 
 /// creates a new mpsc batch channel for a given collection and message type
 ///
 /// the sender is cheaply clonable
-pub fn channel<C>(cap: usize) -> (BatchSender<C>, BatchReceiver<C>)
+pub fn channel<C>(cap: usize) -> (GpscSender<C>, GpscReceiver<C>)
 where
-    C: BatchChanContainer + Send + 'static,
+    C: GpscContainer + Send + 'static,
 {
     if cap > usize::MAX >> 3 {
         panic!("invalid capacity")
     }
 
-    let q = Arc::new(BatchQueue::new(cap));
+    let q = Arc::new(GpscQueue::new(cap));
 
     (
-        BatchSender { inner: q.clone() },
-        BatchReceiver { inner: q.clone() },
+        GpscSender { inner: q.clone() },
+        GpscReceiver { inner: q.clone() },
     )
 }
 
 #[derive(Debug)]
-pub struct BatchReceiver<C>
+pub struct GpscReceiver<C>
 where
-    C: BatchChanContainer + Send + 'static,
+    C: GpscContainer + Send + 'static,
 {
-    pub(crate) inner: Arc<BatchQueue<C>>,
+    pub(crate) inner: Arc<GpscQueue<C>>,
 }
 
-impl<C> BatchReceiver<C>
+impl<C> GpscReceiver<C>
 where
-    C: BatchChanContainer + Send + 'static,
+    C: GpscContainer + Send + 'static,
 {
     /// exchanges queue data with buffer, this call waits until data is available
     ///
@@ -42,14 +42,14 @@ where
     /// # Cancel Safety
     ///
     /// This function is cancel safe.
-    pub async fn take(&self, buf: &mut C) -> Result<usize, BatchChanError> {
+    pub async fn take(&self, buf: &mut C) -> Result<usize, GpscError> {
         if buf.len() != 0 {
-            return Err(BatchChanError::Take(
+            return Err(GpscError::Take(
                 "exchange container is not empty".to_string(),
             ));
         }
         if self.inner.is_closed() {
-            return Err(BatchChanError::ChannelClosed);
+            return Err(GpscError::ChannelClosed);
         }
 
         Ok(self.inner.take(buf).await)
@@ -82,14 +82,14 @@ where
     /// # Cancel Safety
     ///
     /// This function is cancel safe.
-    pub async fn take_max(&self, buf: &mut C) -> Result<usize, BatchChanError> {
+    pub async fn take_max(&self, buf: &mut C) -> Result<usize, GpscError> {
         if buf.len() != 0 {
-            return Err(BatchChanError::Take(
+            return Err(GpscError::Take(
                 "exchange container is not empty".to_string(),
             ));
         }
         if self.inner.is_closed() {
-            return Err(BatchChanError::ChannelClosed);
+            return Err(GpscError::ChannelClosed);
         }
 
         Ok(self.inner.take_max(buf).await)
@@ -119,9 +119,9 @@ where
     }
 }
 
-impl<C> Drop for BatchReceiver<C>
+impl<C> Drop for GpscReceiver<C>
 where
-    C: BatchChanContainer + Send + 'static,
+    C: GpscContainer + Send + 'static,
 {
     fn drop(&mut self) {
         self.inner.close();
@@ -130,25 +130,25 @@ where
 
 /// cheaply clonable handle
 #[derive(Debug, Clone)]
-pub struct BatchSender<C>
+pub struct GpscSender<C>
 where
-    C: BatchChanContainer + Send + 'static,
+    C: GpscContainer + Send + 'static,
 {
-    pub(crate) inner: Arc<BatchQueue<C>>,
+    pub(crate) inner: Arc<GpscQueue<C>>,
 }
 
-impl<C> Drop for BatchSender<C>
+impl<C> Drop for GpscSender<C>
 where
-    C: BatchChanContainer + Send + 'static,
+    C: GpscContainer + Send + 'static,
 {
     fn drop(&mut self) {
         self.inner.decr_sender();
     }
 }
 
-impl<C> BatchSender<C>
+impl<C> GpscSender<C>
 where
-    C: BatchChanContainer + Send + 'static,
+    C: GpscContainer + Send + 'static,
 {
     /// sends a message, waits for free capacity
     ///
@@ -157,9 +157,9 @@ where
     /// # Cancel Safety
     ///
     /// this function is cancel safe, only the position in the queue will be potentially lost
-    pub async fn send(&self, msg: C::Message) -> Result<(), BatchChanError> {
+    pub async fn send(&self, msg: C::Message) -> Result<(), GpscError> {
         if self.inner.is_closed() {
-            return Err(BatchChanError::ChannelClosed);
+            return Err(GpscError::ChannelClosed);
         }
         self.inner.put(msg).await;
         Ok(())
