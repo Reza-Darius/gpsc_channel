@@ -5,4 +5,4 @@ pub mod tests;
 mod tx_rx;
 
 pub use error::GpscError;
-pub use tx_rx::{GpscReceiver, GpscSender, channel};
+pub use tx_rx::{Receiver, Sender, channel};

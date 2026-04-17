@@ -5,7 +5,7 @@ use crate::{container::GpscContainer, error::GpscError, queue::GpscQueue};
 /// creates a new mpsc batch channel for a given collection and message type
 ///
 /// the sender is cheaply clonable
-pub fn channel<C>(cap: usize) -> (GpscSender<C>, GpscReceiver<C>)
+pub fn channel<C>(cap: usize) -> (Sender<C>, Receiver<C>)
 where
     C: GpscContainer + Send + 'static,
 {
@@ -15,21 +15,18 @@ where
 
     let q = Arc::new(GpscQueue::new(cap));
 
-    (
-        GpscSender { inner: q.clone() },
-        GpscReceiver { inner: q.clone() },
-    )
+    (Sender { inner: q.clone() }, Receiver { inner: q.clone() })
 }
 
 #[derive(Debug)]
-pub struct GpscReceiver<C>
+pub struct Receiver<C>
 where
     C: GpscContainer + Send + 'static,
 {
     pub(crate) inner: Arc<GpscQueue<C>>,
 }
 
-impl<C> GpscReceiver<C>
+impl<C> Receiver<C>
 where
     C: GpscContainer + Send + 'static,
 {
@@ -119,7 +116,7 @@ where
     }
 }
 
-impl<C> Drop for GpscReceiver<C>
+impl<C> Drop for Receiver<C>
 where
     C: GpscContainer + Send + 'static,
 {
@@ -130,14 +127,14 @@ where
 
 /// cheaply clonable handle
 #[derive(Debug, Clone)]
-pub struct GpscSender<C>
+pub struct Sender<C>
 where
     C: GpscContainer + Send + 'static,
 {
     pub(crate) inner: Arc<GpscQueue<C>>,
 }
 
-impl<C> Drop for GpscSender<C>
+impl<C> Drop for Sender<C>
 where
     C: GpscContainer + Send + 'static,
 {
@@ -146,7 +143,7 @@ where
     }
 }
 
-impl<C> GpscSender<C>
+impl<C> Sender<C>
 where
     C: GpscContainer + Send + 'static,
 {

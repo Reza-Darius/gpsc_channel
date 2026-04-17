@@ -6,8 +6,6 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::{GpscReceiver, GpscSender};
-
 pub fn mspc_worker(tx: Sender<String>, n_worker: usize, delay: u64) -> Vec<JoinHandle<()>> {
     let tx = Arc::new(tx);
     let mut handles = vec![];
@@ -51,7 +49,7 @@ pub async fn mspc_consumer_limit(mut rx: Receiver<String>, n_msgs: usize, limit:
 }
 
 pub fn gpsc_worker(
-    tx: GpscSender<Vec<String>>,
+    tx: crate::Sender<Vec<String>>,
     n_worker: usize,
     delay: u64,
 ) -> Vec<JoinHandle<()>> {
@@ -74,7 +72,7 @@ pub fn gpsc_worker(
     handles
 }
 
-pub async fn gpsc_consumer(rx: GpscReceiver<Vec<String>>, n_msgs: usize, cap: usize) {
+pub async fn gpsc_consumer(rx: crate::Receiver<Vec<String>>, n_msgs: usize, cap: usize) {
     let mut count = 0;
     let mut buf = Vec::with_capacity(cap);
 
