@@ -62,7 +62,7 @@ for i, group in enumerate(GROUPS):
     ax.bar_label(bars, fmt="%.2f ms", padding=4, fontsize=8)
 
 ax.set_ylabel("Mean latency (ms)")
-ax.set_title("MPSC Channel Benchmarks — High vs Low Throughput")
+ax.set_title("MPSC channel latency (lower is better)")
 ax.set_xticks(x + width / 2)
 ax.set_xticklabels(BENCHMARKS)
 ax.legend()

@@ -3,7 +3,7 @@ use std::{
     hash::Hash,
 };
 
-/// you can implement this trait for your own collections
+/// Container trait used by container for the gpsc channel
 pub trait GpscContainer
 where
     Self: Sized,
