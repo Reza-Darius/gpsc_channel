@@ -1,4 +1,4 @@
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU32};
 
 use parking_lot::Mutex;
 use tokio::sync::{Notify, Semaphore};
@@ -10,6 +10,7 @@ pub(crate) struct BatchQueue<C> {
     q: Mutex<C>,
     cap: usize,
     closed: AtomicBool,
+    n_sender: AtomicU32,
 
     slots: Semaphore,
     not_empty: Notify,
@@ -25,6 +26,7 @@ where
             q: Mutex::new(C::new(cap)),
             cap,
             closed: false.into(),
+            n_sender: 1.into(), // we always start with one sender
             slots: Semaphore::new(cap),
             not_empty: Notify::new(),
             not_full: Notify::new(),
@@ -85,6 +87,15 @@ where
 
     pub(crate) fn is_closed(&self) -> bool {
         self.closed.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    pub(crate) fn decr_sender(&self) {
+        self.n_sender
+            .fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+
+        if self.n_sender.load(std::sync::atomic::Ordering::Relaxed) == 0 {
+            self.close();
+        }
     }
 }
 

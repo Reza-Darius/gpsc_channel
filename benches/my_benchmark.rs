@@ -46,7 +46,7 @@ pub fn channel_benchmark(c: &mut Criterion) {
     // random amount of time a worker waits before sending a msg in miliseconds
     let delay = 10;
     // number of messages for a consumer to process
-    let n_msgs = 1000;
+    let n_msgs = 10000;
     // number of simultaneous producer per consumer
     let n_worker = 100;
 
@@ -55,12 +55,12 @@ pub fn channel_benchmark(c: &mut Criterion) {
     group.sample_size(10);
     group.measurement_time(Duration::from_secs(20));
 
-    group.bench_function("mpsc", |b| {
+    group.bench_function("tokio mpsc", |b| {
         b.to_async(&rt)
             .iter(|| mspc(n_msgs, n_worker, buffer, delay))
     });
 
-    group.bench_function("mpsc limit", |b| {
+    group.bench_function("tokio mpsc limit", |b| {
         b.to_async(&rt)
             .iter(|| mspc_limit(n_msgs, n_worker, buffer, delay))
     });
@@ -75,7 +75,7 @@ pub fn channel_benchmark(c: &mut Criterion) {
     // channel capacity
     let buffer = 1024;
     // random amount of time a worker waits before sending a msg in miliseconds
-    let delay = 10;
+    let delay = 5;
     // number of messages for a consumer to process
     let n_msgs = 100;
     // number of simultaneous producer per consumer
@@ -86,17 +86,17 @@ pub fn channel_benchmark(c: &mut Criterion) {
     group.sample_size(10);
     group.measurement_time(Duration::from_secs(20));
 
-    group.bench_function("mpsc", |b| {
+    group.bench_function("tokio mpsc", |b| {
         b.to_async(&rt)
             .iter(|| mspc(n_msgs, n_worker, buffer, delay))
     });
 
-    group.bench_function("mpsc limit", |b| {
+    group.bench_function("tokio mpsc limit", |b| {
         b.to_async(&rt)
             .iter(|| mspc_limit(n_msgs, n_worker, buffer, delay))
     });
 
-    group.bench_function("batch", |b| {
+    group.bench_function("gpsc", |b| {
         b.to_async(&rt)
             .iter(|| batch(n_msgs, n_worker, buffer, delay))
     });
