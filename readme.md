@@ -1,4 +1,4 @@
-# An Async channel for those who like abusing MPSC channels
+# An channel for those who like abusing MPSC channels
 
 This channel works similarly to tokio's MSPC channel with one trick up it's sleeve.
 
@@ -15,6 +15,7 @@ this library was inspired by this article: https://blog.digital-horror.com/blog/
 
   for _ in 0..100 {
       let tx_clone = tx.clone();
+      
       task_handles.push(tokio::spawn(async move {
           let data = String::from("hello");
           let _ = tx_clone.send(data).await;
@@ -30,6 +31,12 @@ this library was inspired by this article: https://blog.digital-horror.com/blog/
 
   assert_eq!(rcv_buf.len(), 100)
 ```
+
+### Container
+
+Unlike regular channels, this channel is generic over a container that holds the type of message you want to send.
+
+This library exposes the `GpscContainer` trait which is implemented for all the standard library collections.
 
 ## Benchmarks
 
