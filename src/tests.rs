@@ -50,7 +50,7 @@ pub async fn mspc_consumer_limit(mut rx: Receiver<String>, n_msgs: usize, limit:
     }
 }
 
-pub fn batchan_worker(
+pub fn gpsc_worker(
     tx: GpscSender<Vec<String>>,
     n_worker: usize,
     delay: u64,
@@ -74,7 +74,7 @@ pub fn batchan_worker(
     handles
 }
 
-pub async fn batchan_consumer(rx: GpscReceiver<Vec<String>>, n_msgs: usize, cap: usize) {
+pub async fn gpsc_consumer(rx: GpscReceiver<Vec<String>>, n_msgs: usize, cap: usize) {
     let mut count = 0;
     let mut buf = Vec::with_capacity(cap);
 

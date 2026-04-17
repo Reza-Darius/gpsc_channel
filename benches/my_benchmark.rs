@@ -27,10 +27,10 @@ async fn mspc_limit(n_msgs: usize, n_worker: usize, buffer: usize, delay: u64) {
     }
 }
 
-async fn batch(n_msgs: usize, n_worker: usize, buffer: usize, delay: u64) {
+async fn gpsc(n_msgs: usize, n_worker: usize, buffer: usize, delay: u64) {
     let (tx, rx) = gpsc_channel::channel::<Vec<String>>(buffer);
-    let handles = batchan_worker(tx, n_worker, delay);
-    batchan_consumer(rx, n_msgs, buffer).await;
+    let handles = gpsc_worker(tx, n_worker, delay);
+    gpsc_consumer(rx, n_msgs, buffer).await;
 
     assert_eq!(handles.len(), n_worker);
     for handle in handles {
@@ -67,7 +67,7 @@ pub fn channel_benchmark(c: &mut Criterion) {
 
     group.bench_function("gpsc", |b| {
         b.to_async(&rt)
-            .iter(|| batch(n_msgs, n_worker, buffer, delay))
+            .iter(|| gpsc(n_msgs, n_worker, buffer, delay))
     });
 
     group.finish();
@@ -98,7 +98,7 @@ pub fn channel_benchmark(c: &mut Criterion) {
 
     group.bench_function("gpsc", |b| {
         b.to_async(&rt)
-            .iter(|| batch(n_msgs, n_worker, buffer, delay))
+            .iter(|| gpsc(n_msgs, n_worker, buffer, delay))
     });
 
     group.finish();
