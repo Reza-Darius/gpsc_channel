@@ -13,6 +13,7 @@ pub(crate) struct GpscQueue<C> {
     n_sender: Mutex<u32>,
 
     slots: Semaphore,
+    closed_notif: Notify,
     not_empty: Notify,
     not_full: Notify,
 }
@@ -27,7 +28,9 @@ where
             cap,
             closed: false.into(),
             n_sender: 1.into(), // we always start with one sender
+
             slots: Semaphore::new(cap),
+            closed_notif: Notify::new(),
             not_empty: Notify::new(),
             not_full: Notify::new(),
         }
@@ -52,19 +55,39 @@ where
         self.not_empty.notify_one();
     }
 
-    pub(crate) async fn take(&self, buf: &mut C) -> usize {
-        self.not_empty.notified().await;
+    pub(crate) async fn take(&self, buf: &mut C) -> Option<usize> {
+        if self.is_closed() {
+            return None;
+        };
+
+        tokio::select! {
+            _ = self.not_empty.notified() => {}
+            _ = self.closed_notif.notified() => {
+                return None;
+            }
+        };
 
         let mut guard = self.q.lock();
         let n = guard.len();
         std::mem::swap(&mut *guard, buf);
 
+        debug_assert_eq!(n + self.slots.available_permits(), self.cap);
+
         self.slots.add_permits(n);
-        n
+        Some(n)
     }
 
-    pub(crate) async fn take_max(&self, buf: &mut C) -> usize {
-        self.not_full.notified().await;
+    pub(crate) async fn take_max(&self, buf: &mut C) -> Option<usize> {
+        if self.is_closed() {
+            return None;
+        };
+
+        tokio::select! {
+            _ = self.not_full.notified() => {}
+            _ = self.closed_notif.notified() => {
+                return None;
+            }
+        };
 
         let mut guard = self.q.lock();
         let n = guard.len();
@@ -73,7 +96,7 @@ where
         debug_assert_eq!(n, self.cap);
 
         self.slots.add_permits(n);
-        n
+        Some(n)
     }
 
     pub(crate) fn has_data(&self) -> bool {
@@ -82,6 +105,7 @@ where
 
     pub(crate) fn close(&self) {
         self.closed.store(true, std::sync::atomic::Ordering::SeqCst);
+        self.closed_notif.notify_waiters();
     }
 
     pub(crate) fn is_closed(&self) -> bool {

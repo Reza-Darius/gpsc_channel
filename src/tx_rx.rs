@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use crate::{container::GpscContainer, error::GpscError, queue::GpscQueue};
 
-/// creates a new mpsc batch channel for a given collection and message type
+/// creates a new batch channel for a given collection and message type
+///
+/// panics if capacity exceeds `usize::MAX >> 3`
 ///
 /// the sender is cheaply clonable
 pub fn channel<C>(cap: usize) -> (Sender<C>, Receiver<C>)
@@ -45,11 +47,8 @@ where
                 "exchange container is not empty".to_string(),
             ));
         }
-        if self.inner.is_closed() {
-            return Err(GpscError::ChannelClosed);
-        }
 
-        Ok(self.inner.take(buf).await)
+        self.inner.take(buf).await.ok_or(GpscError::ChannelClosed)
     }
 
     /// exchanges queue data with buffer, remaining data in buf will be lost
@@ -67,7 +66,7 @@ where
             return 0;
         };
         buf.clear();
-        self.inner.take(buf).await
+        self.inner.take(buf).await.unwrap_or(0)
     }
 
     /// exchanges queue data with buffer, this call waits until the channel is full
@@ -85,11 +84,10 @@ where
                 "exchange container is not empty".to_string(),
             ));
         }
-        if self.inner.is_closed() {
-            return Err(GpscError::ChannelClosed);
-        }
-
-        Ok(self.inner.take_max(buf).await)
+        self.inner
+            .take_max(buf)
+            .await
+            .ok_or(GpscError::ChannelClosed)
     }
 
     /// exchanges queue data with buffer, this call waits until the channel is full
@@ -107,7 +105,7 @@ where
             return 0;
         };
         buf.clear();
-        self.inner.take_max(buf).await
+        self.inner.take_max(buf).await.unwrap_or(0)
     }
 
     /// checks if the channel has data to read from
