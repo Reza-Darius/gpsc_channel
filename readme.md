@@ -9,27 +9,32 @@ this library was inspired by this [article](https://blog.digital-horror.com/blog
 ## Quick Start
 
 ```Rust
-  let (tx, rx) = channel::<Vec<String>>(100);
+use gpsc_channel::channel;
 
-  let mut task_handles = vec![];
+#[tokio::main]
+async fn main() {
+    let (tx, rx) = channel::<Vec<String>>(100);
 
-  for _ in 0..100 {
-      let tx_clone = tx.clone();
-      
-      task_handles.push(tokio::spawn(async move {
-          let data = String::from("hello");
-          let _ = tx_clone.send(data).await;
-      }));
-  }
+    let mut task_handles = vec![];
 
-  for handle in task_handles {
-      let _ = handle.await;
-  }
+    for _ in 0..100 {
+        let tx_clone = tx.clone();
 
-  let mut rcv_buf = Vec::with_capacity(100);
-  rx.take_unchecked(&mut rcv_buf).await;
+        task_handles.push(tokio::spawn(async move {
+            let data = String::from("hello");
+            let _ = tx_clone.send(data).await;
+        }));
+    }
 
-  assert_eq!(rcv_buf.len(), 100)
+    for handle in task_handles {
+        let _ = handle.await;
+    }
+
+    let mut rcv_buf = Vec::with_capacity(100);
+    rx.take_unchecked(&mut rcv_buf).await;
+
+    assert_eq!(rcv_buf.len(), 100)
+}
 ```
 
 ### Container
