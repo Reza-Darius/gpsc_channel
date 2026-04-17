@@ -1,0 +1,17 @@
+[package]
+name = "gpsc_channel"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+parking_lot = "0.12.5"
+thiserror = "2.0.18"
+tokio = { version = "1.52.1", features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
+rand = "0.10.1"
+
+[dev-dependencies]
+criterion = { version = "0.8.2", features = ["async_tokio"] }
+
+[[bench]]
+name = "my_benchmark"
+harness = false
