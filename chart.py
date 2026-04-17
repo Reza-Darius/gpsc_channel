@@ -14,7 +14,7 @@ import numpy as np
 
 BASE = Path("target/criterion")
 GROUPS = ["high throughput", "low throughput"]
-BENCHMARKS = ["gpsc", "tokio mpsc recv", "tokio mscp recv_many"]
+BENCHMARKS = ["gpsc", "tokio mpsc recv", "tokio mpsc recv_many"]
 
 
 def load_stats(path):
