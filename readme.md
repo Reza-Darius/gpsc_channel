@@ -1,4 +1,4 @@
-# An channel for those who like abusing MPSC channels
+# A channel for those who like abusing channels
 
 This channel works similarly to tokio's MSPC channel with one trick up it's sleeve.
 
