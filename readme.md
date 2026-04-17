@@ -44,7 +44,8 @@ Unlike regular channels, this channel is generic over a container that holds the
 This library exposes the `GpscContainer` trait which is implemented for all the standard library collections.
 
 ## Benchmarks
+![Screenshot](benchmark_comparison.png)
+
 The reason this channel can be so much faster is two fold:
 - avoiding the overhead of repeated calls to `recv()`
 - using more efficient data structures: tokio's channel uses a linked list for its underlying memory
-![Screenshot](benchmark_comparison.png)
