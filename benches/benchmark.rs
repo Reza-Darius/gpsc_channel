@@ -1,9 +1,20 @@
+mod tests;
+
 use std::time::Duration;
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use gpsc_channel::tests::*;
+use tests::*;
 
 use tokio::runtime::Runtime;
+
+// creates a group named "benches", with a number of functions
+criterion_group! {
+    benches,
+    channel_benchmark
+}
+
+// generates main function to run benches group
+criterion_main!(benches);
 
 async fn mspc(n_msgs: usize, n_worker: usize, buffer: usize, delay: u64) {
     let (tx, rx) = tokio::sync::mpsc::channel::<String>(buffer);
@@ -103,12 +114,3 @@ pub fn channel_benchmark(c: &mut Criterion) {
 
     group.finish();
 }
-
-// creates a group named "benches", with a number of functions
-criterion_group! {
-    benches,
-    channel_benchmark
-}
-
-// generates main function to run benches group
-criterion_main!(benches);
