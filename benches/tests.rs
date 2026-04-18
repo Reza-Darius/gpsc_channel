@@ -3,16 +3,16 @@ use std::{sync::Arc, time::Duration};
 use rand::prelude::*;
 use tokio::{
     sync::mpsc::{Receiver, Sender},
-    task::JoinHandle,
+    task::JoinSet,
 };
 
-pub fn mspc_worker(tx: Sender<String>, n_worker: usize, delay: u64) -> Vec<JoinHandle<()>> {
+pub fn mspc_worker(tx: Sender<String>, n_worker: usize, delay: u64) -> JoinSet<()> {
     let tx = Arc::new(tx);
-    let mut handles = vec![];
+    let mut join_set = JoinSet::new();
 
     for _ in 0..n_worker {
         let tx = tx.clone();
-        handles.push(tokio::spawn(async move {
+        join_set.spawn(async move {
             loop {
                 let rng = rand::rng().random_range(..delay);
 
@@ -21,9 +21,9 @@ pub fn mspc_worker(tx: Sender<String>, n_worker: usize, delay: u64) -> Vec<JoinH
                     return;
                 };
             }
-        }));
+        });
     }
-    handles
+    join_set
 }
 pub async fn mspc_consumer(mut rx: Receiver<String>, n_msgs: usize) {
     let mut count = 0;
@@ -52,13 +52,13 @@ pub fn gpsc_worker(
     tx: gpsc_channel::Sender<Vec<String>>,
     n_worker: usize,
     delay: u64,
-) -> Vec<JoinHandle<()>> {
+) -> JoinSet<()> {
     let tx = Arc::new(tx);
-    let mut handles = vec![];
+    let mut join_set = JoinSet::new();
 
     for _ in 0..n_worker {
         let tx = tx.clone();
-        handles.push(tokio::spawn(async move {
+        join_set.spawn(async move {
             loop {
                 let rng = rand::rng().random_range(..delay);
 
@@ -67,9 +67,9 @@ pub fn gpsc_worker(
                     return;
                 };
             }
-        }));
+        });
     }
-    handles
+    join_set
 }
 
 pub async fn gpsc_consumer(rx: gpsc_channel::Receiver<Vec<String>>, n_msgs: usize, cap: usize) {
@@ -78,7 +78,6 @@ pub async fn gpsc_consumer(rx: gpsc_channel::Receiver<Vec<String>>, n_msgs: usiz
 
     while count < n_msgs {
         let _ = rx.take(&mut buf).await;
-
         for _ in buf.iter() {
             count += 1;
         }

@@ -31,9 +31,9 @@ async fn main() {
     }
 
     let mut rcv_buf = Vec::with_capacity(100);
-    rx.take_unchecked(&mut rcv_buf).await;
+    let n = rx.take(&mut rcv_buf).await.unwrap();
 
-    assert_eq!(rcv_buf.len(), 100)
+    assert_eq!(n, 100)
 }
 ```
 

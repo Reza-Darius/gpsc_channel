@@ -51,24 +51,6 @@ where
         self.inner.take(buf).await.ok_or(GpscError::ChannelClosed)
     }
 
-    /// exchanges queue data with buffer, remaining data in buf will be lost
-    ///
-    /// remaining data in buf will be lost, unless the channel is closed, in which case
-    /// this function always immediately returns 0
-    ///
-    /// returns the amounts of messages retrieved
-    ///
-    /// # Cancel Safety
-    ///
-    /// This function is cancel safe.
-    pub async fn take_unchecked(&self, buf: &mut C) -> usize {
-        if self.inner.is_closed() {
-            return 0;
-        };
-        buf.clear();
-        self.inner.take(buf).await.unwrap_or(0)
-    }
-
     /// exchanges queue data with buffer, this call waits until the channel is full
     ///
     /// errors if the passed buffer isnt empty, or if the channel is closed
@@ -90,26 +72,8 @@ where
             .ok_or(GpscError::ChannelClosed)
     }
 
-    /// exchanges queue data with buffer, this call waits until the channel is full
-    ///
-    /// remaining data in buf will be lost, unless the channel is closed, in which case
-    /// this function always immediately returns 0
-    ///
-    /// returns the amounts of messages retrieved
-    ///
-    /// # Cancel Safety
-    ///
-    /// This function is cancel safe.
-    pub async fn take_max_unchecked(&self, buf: &mut C) -> usize {
-        if self.inner.is_closed() {
-            return 0;
-        };
-        buf.clear();
-        self.inner.take_max(buf).await.unwrap_or(0)
-    }
-
     /// checks if the channel has data to read from
-    pub fn has_date(&self) -> bool {
+    pub fn has_data(&self) -> bool {
         self.inner.has_data()
     }
 }
@@ -124,12 +88,24 @@ where
 }
 
 /// cheaply clonable handle
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Sender<C>
 where
     C: GpscContainer + Send + 'static,
 {
     pub(crate) inner: Arc<GpscQueue<C>>,
+}
+
+impl<C> Clone for Sender<C>
+where
+    C: GpscContainer + Send + 'static,
+{
+    fn clone(&self) -> Self {
+        self.inner.inc_sender();
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
 }
 
 impl<C> Drop for Sender<C>
@@ -153,10 +129,6 @@ where
     ///
     /// this function is cancel safe, only the position in the queue will be potentially lost
     pub async fn send(&self, msg: C::Message) -> Result<(), GpscError> {
-        if self.inner.is_closed() {
-            return Err(GpscError::ChannelClosed);
-        }
-        self.inner.put(msg).await;
-        Ok(())
+        self.inner.put(msg).await.ok_or(GpscError::ChannelClosed)
     }
 }
