@@ -30,7 +30,7 @@ async fn main() {
     joins.join_all().await;
 
     let mut rcv_buf = Vec::with_capacity(100);
-    let n = rx.take(&mut rcv_buf).await.unwrap();
+    let n = rx.swap(&mut rcv_buf).await.unwrap();
 
     assert_eq!(n, 100)
 }
@@ -45,6 +45,6 @@ This library exposes the `GpscContainer` trait which is implemented for all the 
 ## Benchmarks
 ![Screenshot](benchmark_comparison.png)
 
-The reason this channel can be so much faster is two fold:
+The reason this channel can be faster is two fold:
 - avoiding the overhead of repeated calls to `recv()`
 - using more efficient data structures: tokio's channel uses a linked list for its underlying memory

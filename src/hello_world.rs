@@ -3,6 +3,7 @@ use tokio::task::JoinSet;
 use crate::channel;
 
 #[tokio::main]
+#[allow(dead_code)]
 async fn main() {
     let (tx, rx) = channel::<Vec<String>>(100);
 
@@ -20,17 +21,7 @@ async fn main() {
     joins.join_all().await;
 
     let mut rcv_buf = Vec::with_capacity(100);
-    let n = rx.take(&mut rcv_buf).await.unwrap();
+    let n = rx.swap(&mut rcv_buf).await.unwrap();
 
     assert_eq!(n, 100)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn main_test() {
-        main();
-    }
 }

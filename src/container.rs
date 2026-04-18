@@ -4,6 +4,7 @@ use std::{
 };
 
 /// Container trait used by container for the gpsc channel
+#[allow(clippy::len_without_is_empty)]
 pub trait GpscContainer
 where
     Self: Sized,

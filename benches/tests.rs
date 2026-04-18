@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use tokio::{io::AsyncWriteExt, task::JoinSet};
 
 // channel capacity
@@ -49,7 +47,7 @@ pub async fn gpsc(n_worker: usize) {
 
         loop {
             // let now = Instant::now();
-            let _ = rx.take(&mut buf).await.unwrap();
+            let _ = rx.swap(&mut buf).await.unwrap();
             for msg in buf.iter() {
                 if count == N_MSGS {
                     return;

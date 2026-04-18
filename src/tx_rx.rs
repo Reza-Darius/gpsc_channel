@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use tokio::sync::futures::OwnedNotified;
-
 use crate::{container::GpscContainer, error::GpscError, queue::GpscQueue};
 
 /// creates a new batch channel for a given collection and message type
@@ -43,7 +41,7 @@ where
     /// # Cancel Safety
     ///
     /// This function is cancel safe.
-    pub async fn take(&self, buf: &mut C) -> Result<usize, GpscError> {
+    pub async fn swap(&self, buf: &mut C) -> Result<usize, GpscError> {
         if buf.len() != 0 {
             return Err(GpscError::Take(
                 "exchange container is not empty".to_string(),
@@ -111,6 +109,7 @@ where
     }
 
     fn new_sender(&self) -> Self {
+        self.inner.inc_sender();
         Sender {
             inner: self.inner.clone(),
         }

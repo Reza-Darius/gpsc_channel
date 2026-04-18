@@ -1,8 +1,7 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32};
 
 use parking_lot::Mutex;
-use tokio::sync::{Notify, Semaphore, futures::OwnedNotified};
+use tokio::sync::{Notify, Semaphore};
 
 use super::container::GpscContainer;
 
@@ -10,13 +9,16 @@ use super::container::GpscContainer;
 pub(crate) struct GpscQueue<C> {
     data: Mutex<C>,
     cap: usize,
-
     closed: AtomicBool,
-    slots: Semaphore,
 
+    // manages the "size" of the channel and number of writing sender
+    slots: Semaphore,
+    // reference count used to close the channel from the sender side
     n_sender: AtomicU32,
 
+    // notifies a waiting receiver if all sender get dropped
     rx_closed: Notify,
+    // notifies a waiting receiver that data is available
     rx_data_available: Notify,
 }
 
@@ -132,7 +134,7 @@ mod tests {
         }
 
         let mut rcv_buf = Vec::with_capacity(100);
-        assert_eq!(rx.take(&mut rcv_buf).await.unwrap(), 100);
+        assert_eq!(rx.swap(&mut rcv_buf).await.unwrap(), 100);
     }
 
     #[tokio::test]
@@ -157,7 +159,7 @@ mod tests {
         let mut rcv_buf = Vec::with_capacity(100);
         rcv_buf.push("i will be lost!".to_string());
 
-        assert!(rx.take(&mut rcv_buf).await.is_err());
+        assert!(rx.swap(&mut rcv_buf).await.is_err());
     }
 
     #[tokio::test]
@@ -168,7 +170,7 @@ mod tests {
 
         drop(tx);
 
-        assert!(rx.take(&mut rcv_buf).await.is_err());
+        assert!(rx.swap(&mut rcv_buf).await.is_err());
     }
 
     #[tokio::test]
