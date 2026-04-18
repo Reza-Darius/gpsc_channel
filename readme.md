@@ -6,29 +6,28 @@ Instead of reading message one at a time, it can clear the entire channel in a s
 
 this library was inspired by this [article](https://blog.digital-horror.com/blog/how-to-avoid-over-reliance-on-mpsc/)
 
-## Quick Start
+## Hello World
 
 ```Rust
 use gpsc_channel::channel;
+use tokio::task::JoinSet;
 
 #[tokio::main]
 async fn main() {
     let (tx, rx) = channel::<Vec<String>>(100);
 
-    let mut task_handles = vec![];
+    let mut joins = JoinSet::new();
 
     for _ in 0..100 {
         let tx_clone = tx.clone();
 
-        task_handles.push(tokio::spawn(async move {
+        joins.spawn(async move {
             let data = String::from("hello");
             let _ = tx_clone.send(data).await;
-        }));
+        });
     }
 
-    for handle in task_handles {
-        let _ = handle.await;
-    }
+    joins.join_all().await;
 
     let mut rcv_buf = Vec::with_capacity(100);
     let n = rx.take(&mut rcv_buf).await.unwrap();
