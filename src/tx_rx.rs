@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{container::GpscContainer, error::GpscError, queue::GpscQueue};
+use crate::{container::GpscContainer, error::GpscError, gpsc::GpscChan};
 
 /// creates a new batch channel for a given collection and message type
 ///
@@ -15,7 +15,7 @@ where
         panic!("invalid capacity")
     }
 
-    let q = Arc::new(GpscQueue::new(cap));
+    let q = Arc::new(GpscChan::new(cap));
 
     (Sender { inner: q.clone() }, Receiver { inner: q.clone() })
 }
@@ -25,7 +25,7 @@ pub struct Receiver<C>
 where
     C: GpscContainer + Send + 'static,
 {
-    pub(crate) inner: Arc<GpscQueue<C>>,
+    pub(crate) inner: Arc<GpscChan<C>>,
 }
 
 impl<C> Receiver<C>
@@ -72,7 +72,7 @@ pub struct Sender<C>
 where
     C: GpscContainer + Send + 'static,
 {
-    pub(crate) inner: Arc<GpscQueue<C>>,
+    pub(crate) inner: Arc<GpscChan<C>>,
 }
 
 impl<C> Clone for Sender<C>

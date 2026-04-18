@@ -6,7 +6,7 @@ use tokio::sync::{Notify, Semaphore};
 use super::container::GpscContainer;
 
 #[derive(Debug)]
-pub(crate) struct GpscQueue<C> {
+pub(crate) struct GpscChan<C> {
     data: Mutex<C>,
     cap: usize,
     closed: AtomicBool,
@@ -22,12 +22,12 @@ pub(crate) struct GpscQueue<C> {
     rx_data_available: Notify,
 }
 
-impl<C> GpscQueue<C>
+impl<C> GpscChan<C>
 where
     C: GpscContainer + Send + 'static,
 {
     pub(crate) fn new(cap: usize) -> Self {
-        GpscQueue {
+        GpscChan {
             data: Mutex::new(C::new(cap)),
             cap,
             closed: false.into(),

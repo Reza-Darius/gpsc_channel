@@ -1,7 +1,7 @@
 mod container;
 mod error;
+mod gpsc;
 mod hello_world;
-mod queue;
 mod tx_rx;
 
 pub use container::GpscContainer;
