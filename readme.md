@@ -1,6 +1,6 @@
 # A channel for *lots* of producer
 
-This channel works similarly to tokio's MSPC channel with one trick up it's sleeve.
+GPSC (gazillion producer, single consumer) is channel similar to tokio's MSPC channel with a twist:
 
 Instead of reading message one at a time, it can clear the entire channel in a single operation by flipping the pointer between two buffer, making it really efficient in situations where you need backpressure and have a large amount of producer and a single consumer.
 
