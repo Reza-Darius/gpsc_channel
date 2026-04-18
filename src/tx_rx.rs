@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use tokio::sync::futures::OwnedNotified;
+
 use crate::{container::GpscContainer, error::GpscError, queue::GpscQueue};
 
 /// creates a new batch channel for a given collection and message type
@@ -51,27 +53,6 @@ where
         self.inner.take(buf).await.ok_or(GpscError::ChannelClosed)
     }
 
-    /// exchanges queue data with buffer, this call waits until the channel is full
-    ///
-    /// errors if the passed buffer isnt empty, or if the channel is closed
-    ///
-    /// returns the amounts of messages retrieved
-    ///
-    /// # Cancel Safety
-    ///
-    /// This function is cancel safe.
-    pub async fn take_max(&self, buf: &mut C) -> Result<usize, GpscError> {
-        if buf.len() != 0 {
-            return Err(GpscError::Take(
-                "exchange container is not empty".to_string(),
-            ));
-        }
-        self.inner
-            .take_max(buf)
-            .await
-            .ok_or(GpscError::ChannelClosed)
-    }
-
     /// checks if the channel has data to read from
     pub fn has_data(&self) -> bool {
         self.inner.has_data()
@@ -101,10 +82,7 @@ where
     C: GpscContainer + Send + 'static,
 {
     fn clone(&self) -> Self {
-        self.inner.inc_sender();
-        Self {
-            inner: self.inner.clone(),
-        }
+        self.new_sender()
     }
 }
 
@@ -130,5 +108,11 @@ where
     /// this function is cancel safe, only the position in the queue will be potentially lost
     pub async fn send(&self, msg: C::Message) -> Result<(), GpscError> {
         self.inner.put(msg).await.ok_or(GpscError::ChannelClosed)
+    }
+
+    fn new_sender(&self) -> Self {
+        Sender {
+            inner: self.inner.clone(),
+        }
     }
 }
