@@ -66,8 +66,11 @@ where
         tokio::select! {
             _ = self.rx_data_available.notified() => {}
             _ = self.rx_closed.notified() => {
-                // we drain the remaining data?
-                return None;
+                let mut guard = self.data.lock();
+                let n = guard.len();
+                std::mem::swap(&mut *guard, buf);
+
+                return Some(n);
             }
         };
 
